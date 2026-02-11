@@ -7,24 +7,29 @@ import sys
 import asyncio
 import requests
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, JSON, DateTime, Boolean, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from cryptography.fernet import Fernet
 
+from config import CONFIG
+from services.runners.mock_runner import run_mock_provisioning_task
+
 # ==========================================
 # 0. 암호화 설정
 # ==========================================
-
+# HARDCODED CONFIG START -- 나중에 실제 키/암호화 설정으로 교체
 ENCRYPT_KEY = b'U7a9ulzi1i_3CPtT0DK6c76CGSHum7Bi2ujtqIzmwIc='
 cipher_suite = Fernet(ENCRYPT_KEY)
+# HARDCODED CONFIG END
 
 def encrypt_password(password: str) -> str:
     return cipher_suite.encrypt(password.encode()).decode()
@@ -34,24 +39,68 @@ def decrypt_password(encrypted_password: str) -> str:
 
 # ==========================================
 # 1. 데이터베이스 설정 (PostgreSQL + SSH Tunnel)
+# 연결 실패 시 SQLite 로컬 파일로 자동 폴백하여 앱이 계속 실행되게 함.
 # ==========================================
 
 logging.basicConfig(level=logging.INFO)
 db_logger = logging.getLogger("uvicorn")
 ans_logger = logging.getLogger("uvicorn.error")
 
-# [변경] SSH 터널링을 통한 로컬 접속 (15432 포트)
+# HARDCODED CONFIG START -- TODO: 나중에 실제 DB 정보(vCenter/AWS/운영 DB)로 교체
 SQLALCHEMY_DATABASE_URL = "postgresql://admin:Soldesk1.@localhost:15432/cmp_db"
+SQLITE_FALLBACK_URL = "sqlite:///./app.db"
+# HARDCODED CONFIG END
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, 
-    pool_size=20, 
-    max_overflow=10, 
-    pool_pre_ping=True, 
-    connect_args={"connect_timeout": 5}
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+
+def _create_engine_with_fallback():
+    """
+    우선 PostgreSQL(하드코딩 URL)로 연결 시도.
+    실패 시(예: Connection refused) 호스트/포트와 사유를 로그에 남기고
+    SQLite(app.db)로 임시 전환하여 앱이 죽지 않게 함.
+    """
+    primary = SQLALCHEMY_DATABASE_URL
+    try:
+        engine = create_engine(
+            primary,
+            pool_size=20,
+            max_overflow=10,
+            pool_pre_ping=True,
+            connect_args={"connect_timeout": 5},
+        )
+        with engine.connect() as _:
+            pass
+        return engine
+    except Exception as e:
+        host, port = "localhost", "15432"
+        try:
+            parsed = urlparse(primary)
+            if parsed.hostname:
+                host = parsed.hostname
+            if parsed.port is not None:
+                port = str(parsed.port)
+            else:
+                # postgresql://user:pass@host:15432/db 형태에서 host:port 추출
+                netloc = getattr(parsed, "netloc", "") or ""
+                if "@" in netloc:
+                    _, hostport = netloc.rsplit("@", 1)
+                    if ":" in hostport:
+                        host, port = hostport.rsplit(":", 1)
+                        port = str(port)
+        except Exception:
+            pass
+        db_logger.warning(
+            "DB 연결 실패 (host=%s, port=%s, 사유: %s) → SQLite로 임시 전환",
+            host, port, e,
+        )
+        print("DB 연결 실패 → SQLite로 임시 전환")  # 콘솔에 명확히 출력
+        # SQLite는 pool_size/connect_timeout 등 불필요; 단순 생성
+        return create_engine(SQLITE_FALLBACK_URL, connect_args={"check_same_thread": False})
+
+
+engine = _create_engine_with_fallback()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # ==========================================
 # 2. DB 테이블 모델
@@ -145,6 +194,9 @@ def run_ansible_task(playbook_name: str, extra_vars: dict, project_id: int):
     # (생략: 실제 배포 로직이 필요하다면 기존 코드 복구 가능)
     pass
 
+# 하드코딩 설정은 config.CONFIG 에서 참조 (기존 코드 호환용 별칭)
+TEMPLATE_MAP = CONFIG["template_map"]
+
 # ==========================================
 # 5. API 엔드포인트
 # ==========================================
@@ -157,17 +209,10 @@ async def login(req: LoginRequest, db: Session = Depends(get_db)):
         return {"status": "success", "message": "Login Approved"}
     raise HTTPException(status_code=401, detail="아이디/비번 불일치")
 
-TEMPLATE_MAP = {
-    "single": 1,        
-    "standard": 3,      
-    "enterprise": 5,    
-    "k8s_small": 3,     
-}
-
 # [신규] Prometheus 데이터 조회 함수
+# HARDCODED CONFIG START -- TODO: 나중에 실제 Prometheus URL로 교체
 def query_prometheus(query: str):
-    # SSH 터널링된 로컬 포트 사용 (19090)
-    PROMETHEUS_URL = "http://localhost:19090/api/v1/query"
+    PROMETHEUS_URL = "http://localhost:19090/api/v1/query"  # SSH 터널링된 로컬 포트 가정
     try:
         response = requests.get(PROMETHEUS_URL, params={'query': query}, timeout=2)
         if response.status_code == 200:
@@ -177,106 +222,157 @@ def query_prometheus(query: str):
     except Exception as e:
         print(f"⚠️ Prometheus Query Error: {e}")
     return []
+# HARDCODED CONFIG END
+
+
+def _my_resources_from_mock_projects(db: Session) -> List[Dict[str, Any]]:
+    """ProjectHistory.details.resources 가 있는 프로젝트를 my-resources 형식으로 변환 (DB 기반)."""
+    rows = []
+    projects = db.query(ProjectHistory).filter(ProjectHistory.details.isnot(None)).all()
+    for proj in projects:
+        details = proj.details if isinstance(proj.details, dict) else {}
+        res = details.get("resources")
+        status_detail = details.get("status", proj.status or "")
+        if not res:
+            continue
+        project_name = proj.service_name or "Unknown Project"
+        # alb_ip
+        alb = res.get("alb_ip")
+        if alb:
+            rows.append({
+                "vm_name": "ALB",
+                "ip_address": alb,
+                "project_name": project_name,
+                "cpu_usage": 0,
+                "memory_usage": 0,
+                "status": "Running" if status_detail == CONFIG["status_completed"] else status_detail,
+            })
+        # web_url (주소처럼 표시)
+        web = res.get("web_url")
+        if web:
+            rows.append({
+                "vm_name": "Web",
+                "ip_address": web,
+                "project_name": project_name,
+                "cpu_usage": 0,
+                "memory_usage": 0,
+                "status": "Running" if status_detail == CONFIG["status_completed"] else status_detail,
+            })
+        # db_vip
+        dbv = res.get("db_vip")
+        if dbv:
+            rows.append({
+                "vm_name": "DB",
+                "ip_address": dbv,
+                "project_name": project_name,
+                "cpu_usage": 0,
+                "memory_usage": 0,
+                "status": "Running" if status_detail == CONFIG["status_completed"] else status_detail,
+            })
+        # ssh_targets
+        for i, t in enumerate(res.get("ssh_targets") or []):
+            host = t.get("host") if isinstance(t, dict) else str(t)
+            if host:
+                rows.append({
+                    "vm_name": f"SSH-{i + 1}",
+                    "ip_address": host,
+                    "project_name": project_name,
+                    "cpu_usage": 0,
+                    "memory_usage": 0,
+                    "status": "Running" if status_detail == CONFIG["status_completed"] else status_detail,
+                })
+    return rows
+
 
 @app.get("/api/monitoring/my-resources")
 async def get_my_resources(db: Session = Depends(get_db)):
     """
     현재 로그인한 사용자(admin 고정)의 VM 목록을 DB에서 가져오고,
-    각 VM의 실시간 CPU/Memory 사용량을 Prometheus에서 조회하여 반환
+    Mock 프로젝트의 details.resources 도 함께 반환. Prometheus 연동은 선택.
     """
     current_user = "admin"
-    
-    # 1. DB에서 사용자 자원 조회 (WorkloadTestPool 사용)
+    result: List[Dict[str, Any]] = []
+
+    # 1. WorkloadTestPool 기반 자원 (기존 동작 유지)
     my_vms = db.query(WorkloadTestPool).filter(
         WorkloadTestPool.occupy_user == current_user,
         WorkloadTestPool.is_used == True
     ).all()
-    
-    if not my_vms:
-        return []
 
-    # 2. Prometheus 쿼리 준비
-    # (1) CPU Usage: (1 - idle) * 100
-    # (2) Memory Usage: (1 - available/total) * 100
-    # instance 라벨은 보통 "IP:9100" 형태라고 가정
-    
     cpu_query = '100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100)'
     mem_query = '(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100'
-
     cpu_data = query_prometheus(cpu_query)
     mem_data = query_prometheus(mem_query)
-
-    # 3. 데이터 매핑 (Instance IP -> Metrics)
     metrics_map = {}
-    
+
     def parse_metrics(results, metric_type):
         for res in results:
-            # instance="192.168.40.20:9100" -> extract "192.168.40.20"
             instance = res['metric'].get('instance', '')
             ip = instance.split(':')[0]
             val = float(res['value'][1])
-            
-            if ip not in metrics_map: metrics_map[ip] = {}
+            if ip not in metrics_map:
+                metrics_map[ip] = {}
             metrics_map[ip][metric_type] = round(val, 1)
 
     parse_metrics(cpu_data, 'cpu')
     parse_metrics(mem_data, 'memory')
 
-    result = []
     for vm in my_vms:
-        # 프로젝트 이름 조회
         project_name = "Unknown Project"
         if vm.project_id:
             proj = db.query(ProjectHistory).filter(ProjectHistory.id == vm.project_id).first()
-            if proj: project_name = proj.service_name
-
-        # 매핑된 메트릭 값 가져오기 (없으면 0)
+            if proj:
+                project_name = proj.service_name
         usage = metrics_map.get(vm.ip_address, {})
-        
         result.append({
             "vm_name": vm.vm_name,
             "ip_address": vm.ip_address,
             "project_name": project_name,
-            "cpu_usage": usage.get('cpu', 0),     # Prometheus 값 or 0
-            "memory_usage": usage.get('memory', 0), # Prometheus 값 or 0
+            "cpu_usage": usage.get('cpu', 0),
+            "memory_usage": usage.get('memory', 0),
             "status": "Running"
         })
 
+    # 2. Mock 프로젝트의 details.resources 기반 항목 추가 (DB 기반)
+    result.extend(_my_resources_from_mock_projects(db))
     return result
+
 
 @app.post("/api/provision")
 async def create_infrastructure(request: ProjectRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    # (간소화: 기존 로직과 유사하게 구현하되 WorkloadTestPool 사용)
+    """
+    Mock Runner: DB에 PENDING 프로젝트 생성 후 즉시 응답, 백그라운드에서 Mock provisioning 실행.
+    """
     user_template = request.config.get('template', 'single')
-    needed_count = TEMPLATE_MAP.get(user_template, 1)
-
-    # 가용 자원 조회
-    vms = db.query(WorkloadTestPool).filter(WorkloadTestPool.is_used == False).order_by(WorkloadTestPool.id.asc()).limit(needed_count).all()
-    if len(vms) < needed_count:
-        return {"status": "error", "message": "가용 자원 부족"}
-
-    assigned_ips = [vm.ip_address for vm in vms]
-    
-    # 프로젝트 생성
+    input_payload = {
+        "serviceName": request.serviceName,
+        "userName": request.userName,
+        "config": request.config,
+        "targetInfra": request.targetInfra,
+    }
+    details = {
+        "input": input_payload,
+        "config": request.config,
+        "infra": request.targetInfra,
+        "status": CONFIG["status_pending"],
+        "logs": [],
+        "resources": None,
+        "error": None,
+    }
     new_project = ProjectHistory(
         service_name=request.serviceName,
-        status="CONFIGURING",
-        assigned_ip=", ".join(assigned_ips),
+        status=CONFIG["status_pending"],
+        assigned_ip="",
         template_type=user_template,
-        details={"config": request.config, "infra": request.targetInfra}
+        details=details,
     )
     db.add(new_project)
     db.commit()
     db.refresh(new_project)
 
-    # 자원 할당
-    for vm in vms:
-        vm.is_used = True
-        vm.project_id = new_project.id
-        vm.occupy_user = "admin" # request.userName 대신 고정
-    db.commit()
+    background_tasks.add_task(run_mock_provisioning_task, new_project.id, input_payload)
+    return {"status": "success", "message": f"프로젝트 #{new_project.id} 생성 시작", "project_id": new_project.id}
 
-    return {"status": "success", "message": f"프로젝트 #{new_project.id} 생성 완료"}
 
 @app.delete("/api/provision/{project_id}")
 async def delete_project(project_id: int, db: Session = Depends(get_db)):
@@ -284,8 +380,6 @@ async def delete_project(project_id: int, db: Session = Depends(get_db)):
     if not project:
         raise HTTPException(status_code=404, detail="Not Found")
     
-    # 자원 반납 (WorkloadTestPool)
-    # assigned_ip 문자열 파싱보다는 project_id로 찾는게 정확함
     vms = db.query(WorkloadTestPool).filter(WorkloadTestPool.project_id == project_id).all()
     for vm in vms:
         vm.is_used = False
@@ -297,14 +391,29 @@ async def delete_project(project_id: int, db: Session = Depends(get_db)):
     return {"status": "success", "message": "삭제 완료"}
 
 # ... 기타 기존 페이지 라우트 ...
+# 템플릿 경로: main.py 기준으로 고정 (작업 디렉터리 영향 없음)
+_TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+
 @app.get("/")
-async def read_index(): return FileResponse('templates/omakase_final.html')
+async def read_index():
+    """첫 화면: 인프라 선택 페이지 (select_infra)"""
+    return FileResponse(os.path.join(_TEMPLATES_DIR, "select_infra(1).html"))
+
+@app.get("/configure")
+async def read_configure():
+    """AWS 선택 후: Configure & Provision 페이지 (omakase_final)"""
+    return FileResponse(os.path.join(_TEMPLATES_DIR, "omakase_final.html"))
 
 @app.get("/history")
-async def read_history(): return FileResponse('templates/history.html')
+async def read_history(): return FileResponse(os.path.join(_TEMPLATES_DIR, "history.html"))
 
 @app.get("/monitoring")
-async def read_monitoring(): return FileResponse('templates/monitoring.html')
+async def read_monitoring(): return FileResponse(os.path.join(_TEMPLATES_DIR, "monitoring.html"))
+
+@app.get("/main_ui")
+async def read_main_ui():
+    """Expert Mode / Operations: main_ui.html"""
+    return FileResponse(os.path.join(_TEMPLATES_DIR, "main_ui.html"))
 
 @app.get("/api/api/history") # (오타 방지용)
 @app.get("/api/history")
@@ -314,7 +423,6 @@ async def get_history(db: Session = Depends(get_db)):
 @app.get("/api/public/settings")
 async def get_public_settings(db: Session = Depends(get_db)):
     s = db.query(SystemSetting).first()
-    # 없을 경우 대비
     return {"system_notice": s.system_notice if s else "", "maintenance_mode": s.maintenance_mode if s else False}
 
 # 서버 실행
