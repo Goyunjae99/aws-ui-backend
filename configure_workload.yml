@@ -1,0 +1,77 @@
+- name: VM 전원 상태 확인
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Ensure Workload VM is powered on
+      vmware.vmware.vm_powerstate:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: "Datacenter"
+        name: "{{ item }}"
+        state: powered-on
+      delegate_to: localhost
+      loop: "{{ target_vm_names }}"
+
+    - name: Wait for VM to boot
+      wait_for:
+        host: "{{ target_ip }}"
+        port: 22
+        state: started
+        timeout: 300
+      delegate_to: localhost
+
+- name: 워크로드 VM에 사용자가 선택한 패키지 설치 및 서비스 기동
+  hosts: all
+  become: yes
+  vars:
+    # UI 명칭과 실제 패키지/서비스 명칭 매핑
+    pkg_map:
+      nginx: { pkg: "nginx", svc: "nginx" }
+      haproxy: { pkg: "haproxy", svc: "haproxy" }
+      tomcat: { pkg: "tomcat", svc: "tomcat" }
+      postgresql: { pkg: "postgresql-server", svc: "postgresql" }
+      mysql: { pkg: "mariadb-server", svc: "mariadb" }
+      redis: { pkg: "redis", svc: "redis" }
+      docker: { pkg: "docker", svc: "docker" }
+      jenkins: { pkg: "jenkins", svc: "jenkins" }
+      elasticsearch: { pkg: "elasticsearch", svc: "elasticsearch" }
+      kibana: { pkg: "kibana", svc: "kibana" }
+      # Node.js와 Python은 보통 서비스 형태가 아니므로 패키지만 설치
+      nodejs: { pkg: "nodejs", svc: "" }
+      python: { pkg: "python3", svc: "" }
+
+  tasks:
+    - name: Debug Received Packages
+      debug:
+        msg: "설치 요청된 패키지 리스트: {{ packages_to_install }}"
+
+    # 1. 공통: 패키지 일괄 설치
+    - name: Install requested packages
+      yum:
+        name: "{{ pkg_map[item].pkg }}"
+        state: present
+      loop: "{{ packages_to_install }}"
+      when: item in pkg_map
+
+    # 2. 특수: PostgreSQL 초기화
+    - name: Initialize PostgreSQL database
+      command: postgresql-setup initdb
+      args:
+        creates: /var/lib/pgsql/data/PG_VERSION
+      when: "'postgresql' in packages_to_install"
+
+    # 3. 특수: MySQL(MariaDB) 초기화 필요 시 추가 가능
+    
+    # 4. 공통: 서비스 기동 및 자동 시작 설정
+    - name: Start and enable services
+      systemd:
+        name: "{{ pkg_map[item].svc }}"
+        state: started
+        enabled: yes
+      loop: "{{ packages_to_install }}"
+      when: 
+        - item in pkg_map 
+        - pkg_map[item].svc != ""
+      ignore_errors: yes # 일부 서비스 설정 미비로 인한 중단 방지

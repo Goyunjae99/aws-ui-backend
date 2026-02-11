@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H-CMP | Order History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #f2f3f3;
+            /* AWS Light Background */
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* AWS Colors & Utilities */
+        .aws-header-bg {
+            background-color: #232f3e;
+        }
+
+        .aws-dark-text {
+            color: #16191f;
+        }
+
+        .aws-orange-bg {
+            background-color: #ec7211;
+        }
+
+        .aws-btn {
+            background-color: #ec7211;
+            color: #ffffff;
+            font-weight: 700;
+            transition: all 0.2s;
+            border: 1px solid #ec7211;
+        }
+
+        .aws-btn:hover {
+            background-color: #eb5f07;
+            border-color: #dd5906;
+        }
+
+        .aws-btn-secondary {
+            background-color: #ffffff;
+            color: #545b64;
+            border: 1px solid #545b64;
+        }
+
+        .aws-btn-secondary:hover {
+            background-color: #f8f8f8;
+            color: #16191f;
+            border-color: #16191f;
+        }
+
+        /* Table Styles */
+        .aws-table-container {
+            background: white;
+            border: 1px solid #d5dbdb;
+            border-radius: 4px;
+            /* rounded-md basically */
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .aws-th {
+            background-color: #fafafa;
+            border-bottom: 2px solid #d5dbdb;
+            color: #545b64;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 12px 16px;
+            text-align: left;
+        }
+
+        .aws-td {
+            border-bottom: 1px solid #eaeded;
+            padding: 12px 16px;
+            color: #16191f;
+            font-size: 13px;
+        }
+
+        .aws-tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .scale-fit {
+            transform: scale(0.85);
+            transform-origin: top center;
+            width: 100%;
+        }
+
+        /* Status Badges */
+        .badge-base {
+            display: inline-flex;
+            align-items: center;
+
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 10px;
+        }
+
+        .bg-aws-green {
+            background-color: #dfece3;
+            color: #1d8102;
+            border: 1px solid #c9e3d2;
+        }
+
+        .bg-aws-red {
+            background-color: #ffebe9;
+            color: #d13212;
+            border: 1px solid #fbd6d3;
+        }
+
+        .bg-aws-gray {
+            background-color: #f2f3f3;
+            color: #545b64;
+            border: 1px solid #d5dbdb;
+        }
+
+        /* Sidebar Item */
+        .nav-item:hover {
+            color: #ec7211;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-[#16191f] flex flex-col">
+
+    <header class="bg-[#232f3e] text-white px-6 py-3 flex justify-between items-center shadow-md z-40 shrink-0">
+        <div class="flex items-center gap-3">
+            <button onclick="location.href='/'" class="hover:text-[#ec7211] transition"><i data-lucide="box"
+                    class="w-6 h-6 text-[#ec7211]"></i></button>
+            <h1 class="text-base font-bold tracking-tight">Management Console <span
+                    class="text-gray-400 font-normal mx-2">/</span> History</h1>
+        </div>
+        <div class="flex items-center gap-4 text-sm">
+            <div id="admin-indicator"
+                class="hidden flex items-center gap-2 bg-[#d13212] px-3 py-0.5 rounded text-xs font-bold">
+                ADMIN MODE
+            </div>
+            <button onclick="toggleAdminMode()" id="btn-admin-toggle"
+                class="hover:text-[#ec7211] font-bold text-gray-300">
+                Admin Login
+            </button>
+            <div class="h-4 w-px bg-gray-600"></div>
+            <a href="/" class="hover:text-[#ec7211] font-bold">Back to Console</a>
+        </div>
+    </header>
+
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden bg-[#f2f3f3]">
+        <nav
+            class="w-full lg:w-16 bg-[#232f3e] flex lg:flex-col items-center py-4 gap-6 border-t border-gray-700 shrink-0">
+            <i onclick="location.href='/'" data-lucide="home"
+                class="w-5 h-5 text-gray-400 hover:text-[#ec7211] cursor-pointer hover:scale-110 transition"
+                title="Home"></i>
+            <i onclick="location.href='/monitoring'" data-lucide="activity"
+                class="w-5 h-5 text-gray-400 hover:text-[#ec7211] cursor-pointer hover:scale-110 transition"
+                title="Monitoring"></i>
+            <i onclick="location.reload()" data-lucide="list"
+                class="w-5 h-5 text-[#ec7211] cursor-pointer hover:scale-110 transition" title="History"></i>
+            <i onclick="alert('Settings')" data-lucide="settings"
+                class="w-5 h-5 text-gray-400 hover:text-[#ec7211] cursor-pointer hover:scale-110 transition mt-auto"
+                title="Settings"></i>
+        </nav>
+
+        <main class="flex-1 p-6 overflow-y-auto">
+            <div class="max-w-7xl mx-auto space-y-6 pb-20">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <h1 class="text-xl font-bold text-[#16191f]">Provisioning History</h1>
+                        <p class="text-xs text-[#545b64] mt-1">View and manage your infrastructure provisioning logs.
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="downloadCSV()" id="btn-csv"
+                            class="hidden aws-btn-secondary px-3 py-1.5 rounded text-xs font-bold flex items-center gap-2">
+                            <i data-lucide="download" class="w-3 h-3"></i> CSV
+                        </button>
+                        <button onclick="loadHistory()"
+                            class="bg-white border border-[#d5dbdb] px-3 py-1.5 rounded text-xs font-bold hover:border-[#ec7211] text-[#545b64] flex items-center gap-2 transition hover:text-[#ec7211]">
+                            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="aws-table-container">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="aws-th w-16">ID</th>
+                                <th class="aws-th">Service Name</th>
+                                <th class="aws-th">Status</th>
+                                <th class="aws-th">Allocated IP</th>
+                                <th class="aws-th">Specs (Config)</th>
+                                <th class="aws-th">Created At</th>
+                                <th class="aws-th w-20 text-center hidden admin-col">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-list" class="divide-y divide-gray-100 bg-white">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let isAdmin = false;
+        let historyData = [];
+
+        window.onload = loadHistory;
+
+        function toggleAdminMode() {
+            if (!isAdmin) {
+                const pw = prompt("Enter Admin Password:", "");
+                if (pw === "1234") enableAdminMode();
+                else if (pw !== null) alert("Incorrect Password.");
+            } else {
+                disableAdminMode();
+            }
+        }
+
+        function enableAdminMode() {
+            isAdmin = true;
+            document.getElementById('admin-indicator').classList.remove('hidden');
+            document.getElementById('btn-csv').classList.remove('hidden');
+            document.getElementById('btn-admin-toggle').innerText = "Exit Admin";
+            renderTable();
+        }
+
+        function disableAdminMode() {
+            isAdmin = false;
+            document.getElementById('admin-indicator').classList.add('hidden');
+            document.getElementById('btn-csv').classList.add('hidden');
+            document.getElementById('btn-admin-toggle').innerText = "Admin Login";
+            renderTable();
+        }
+
+        async function loadHistory() {
+            const tbody = document.getElementById('history-list');
+            tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-gray-400 text-sm">Loading data...</td></tr>`;
+
+            try {
+                const response = await fetch('/api/history');
+                if (response.ok) {
+                    historyData = await response.json();
+                    renderTable();
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-red-500 text-sm font-bold">Failed to load data (HTTP ${response.status})</td></tr>`;
+                }
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-red-500 text-sm font-bold">Connection Error: ${error.message}</td></tr>`;
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('history-list');
+
+            if (!historyData || historyData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-12 text-center text-gray-400 text-sm">No provisioning history found.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            historyData.forEach(item => {
+                const date = new Date(item.created_at).toLocaleString('ko-KR');
+
+                // Data Parsing
+                let details = typeof item.details === 'string' ? JSON.parse(item.details) : item.details;
+                const conf = details.config || {};
+                const packages = details.packages || [];
+
+                // Spec Calculation
+                let vcpu = "4", ram = "8";
+                if (conf.traffic === 'low') { vcpu = "1"; ram = "2"; }
+                else if (conf.traffic === 'high') { vcpu = "8"; ram = "16"; }
+
+                // IP Display
+                const ipDisplay = item.assigned_ip
+                    ? `<span class="font-mono text-[#0073bb] font-bold text-xs">${item.assigned_ip}</span>`
+                    : `<span class="text-gray-400 italic text-xs">Pending</span>`;
+
+                // Package Summary
+                const pkgText = packages.length > 0 ? packages.join(', ') : 'None';
+
+                // Status Badge Logic
+                let badgeClass = "bg-aws-gray"; // Default (STOPPED/DELETED)
+                const status = item.status ? item.status.toUpperCase() : "UNKNOWN";
+
+                if (["PROVISIONED", "RUNNING", "COMPLETED"].includes(status)) {
+                    badgeClass = "bg-aws-green";
+                } else if (["ERROR", "FAILED"].includes(status)) {
+                    badgeClass = "bg-aws-red";
+                }
+
+                const deleteBtn = isAdmin
+                    ? `<td class="aws-td text-center admin-col"><button onclick="deleteProject(${item.id})" class="text-gray-400 hover:text-red-600 transition p-1 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>`
+                    : `<td class="hidden admin-col"></td>`;
+
+                html += `
+                    <tr class="aws-tr transition">
+                        <td class="aws-td font-mono text-gray-500">#${item.id}</td>
+                        <td class="aws-td font-bold text-[#ec7211]">${item.service_name}</td>
+                        <td class="aws-td">
+                            <span class="badge-base ${badgeClass}">
+                                ${status}
+                            </span>
+                        </td>
+                        <td class="aws-td">${ipDisplay}</td>
+                        <td class="aws-td">
+                            <div class="text-xs font-bold text-[#16191f]">${vcpu} vCore / ${ram} GB</div>
+                            <div class="text-[10px] text-gray-500 truncate w-32" title="${pkgText}">📦 ${pkgText}</div>
+                        </td>
+                        <td class="aws-td text-gray-500 text-xs">${date}</td>
+                        ${deleteBtn}
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+            lucide.createIcons();
+
+            // Re-apply admin column visibility based on current mode because re-render resets it theoretically HTML literal does it but just safe measure not needed since the literal includes conditional `hidden` or not.
+            // Actually the `deleteBtn` var handles the class helper.
+        }
+
+        async function deleteProject(id) {
+            if (!confirm(`Are you sure you want to delete Project #${id}?`)) return;
+            try {
+                const response = await fetch(`/api/provision/${id}`, { method: 'DELETE' });
+                if (response.ok) { alert("Deleted."); loadHistory(); }
+                else { alert("Delete failed"); }
+            } catch (e) { alert("Error occurred"); }
+        }
+
+        function downloadCSV() {
+            if (historyData.length === 0) { alert("No data to export."); return; }
+
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM
+            csvContent += "ID,Service Name,Status,Created At,vCPU,Memory,HA,Packages,Target vCenter\n";
+
+            historyData.forEach(item => {
+                const conf = item.details.config || {};
+                const infra = item.details.infra || {};
+                const date = new Date(item.created_at).toISOString();
+
+                let vcpu = "1", ram = "2";
+                if (conf.traffic === 'mid') { vcpu = "4"; ram = "8"; }
+                else if (conf.traffic === 'high') { vcpu = "8"; ram = "16"; }
+
+                const packages = conf.packages ? `"${conf.packages.join(', ')}"` : "";
+
+                const row = [
+                    item.id,
+                    item.service_name,
+                    item.status,
+                    date,
+                    vcpu,
+                    ram,
+                    conf.ha || "single",
+                    packages,
+                    infra.vCenter || ""
+                ].join(",");
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `provisioning_history_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+
+</html>

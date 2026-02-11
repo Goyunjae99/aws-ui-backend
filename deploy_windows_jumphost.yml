@@ -1,0 +1,106 @@
+---
+# ====================================================
+# [1단계] vCenter에 접속하여 Windows VM 생성하기
+# ====================================================
+- name: 1. Windows VM Provisioning Phase
+  hosts: localhost
+  gather_facts: no
+  vars:
+    # ---------------------------------------------------------
+    # [vCenter 접속 정보]
+    # ---------------------------------------------------------
+    vcenter_hostname: "172.16.6.76"       # 민수 PC (vCenter)
+    vcenter_username: "administrator@vsphere.local"
+    vcenter_password: "Soldesk1."         # 비밀번호 (확인됨)
+    
+    # ---------------------------------------------------------
+    # [인프라 위치 정보] ★여기가 수정되었습니다★
+    # ---------------------------------------------------------
+    datacenter_name: "Main_Datacenter"    # <--- [수정완료] 진짜 이름 반영!
+    cluster_name: "Cluster01"             # 기본 클러스터
+    datastore_name: "datastore1"          # 기본 저장소
+    network_name: "VM Network"
+
+    # ---------------------------------------------------------
+    # [템플릿 및 VM 설정]
+    # ---------------------------------------------------------
+    vm_template: "Win10-Template-v1"      # 템플릿 이름
+    
+    # 생성될 VM 이름 (랜덤 숫자 붙임)
+    final_vm_name: "Win-JumpHost-{{ 1000 | random }}"
+    
+    # 새 윈도우 관리자 비밀번호
+    new_admin_password: "NewPassword123!"
+
+  tasks:
+    - name: Clone Windows VM from Template
+      community.vmware.vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: "{{ datacenter_name }}"
+        cluster: "{{ cluster_name }}"
+        folder: "/"
+        name: "{{ final_vm_name }}"
+        template: "{{ vm_template }}"
+        state: poweredon
+        
+        # [하드웨어 설정]
+        hardware:
+          num_cpus: 2
+          memory_mb: 4096
+          
+        # [네트워크 설정: DHCP]
+        networks:
+          - name: "{{ network_name }}"
+            type: dhcp
+        
+        # [Sysprep: 윈도우 초기화 및 비번 설정]
+        customization:
+          password: "{{ new_admin_password }}"
+        
+        wait_for_ip_address: yes
+      delegate_to: localhost
+      register: deploy_vm_result
+
+    - name: Debug IP Address
+      debug:
+        msg: "VM Created! IP: {{ deploy_vm_result.instance.ipv4 }}"
+
+    - name: Add new host to inventory
+      add_host:
+        hostname: "{{ deploy_vm_result.instance.ipv4 }}"
+        groups: new_windows_group
+        ansible_user: "Administrator"
+        ansible_password: "{{ new_admin_password }}"
+        ansible_connection: winrm
+        ansible_winrm_server_cert_validation: ignore
+        ansible_winrm_transport: ntlm
+
+# ====================================================
+# [2단계] 생성된 윈도우에 접속하여 프로그램 설치하기
+# ====================================================
+- name: 2. Configuration Phase (Software Install)
+  hosts: new_windows_group
+  gather_facts: no
+  
+  tasks:
+    - name: Wait for WinRM connection
+      wait_for_connection:
+        timeout: 600
+
+    - name: Install Chocolatey
+      win_chocolatey:
+        name: chocolatey
+        state: present
+
+    - name: Install Admin Tools (Chrome, Putty, VSCode, Git)
+      win_chocolatey:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - googlechrome
+        - putty
+        - vscode
+        - git

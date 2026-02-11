@@ -1,0 +1,108 @@
+---
+# ====================================================
+# [1단계] vCenter에 접속하여 Linux(CentOS) VM 생성하기
+# ====================================================
+- name: 1. Linux Service Provisioning Phase
+  hosts: localhost
+  gather_facts: no
+  vars:
+    # [설정] vCenter 접속 정보
+    vcenter_hostname: "192.168.0.100"
+    vcenter_username: "administrator@vsphere.local"
+    vcenter_password: "YourVcenterPassword!"
+    
+    # [기본값 설정] 파이썬에서 값을 안 주면 아래 값을 쓰지만, 실제론 파이썬이 덮어씌움
+    # {{ ... }} 구문이 파이썬에서 넘어온 변수를 받는 자리입니다.
+    vm_template: "CentOS7-Template-v1"
+    vm_name: "{{ target_vm_name | default('Web-Service-Default') }}"
+    vm_ip: "{{ target_vm_ip | default('192.168.0.202') }}"
+    vm_gateway: "192.168.0.1"
+    vm_dns: "8.8.8.8"
+    root_password: "Password123!"
+
+  tasks:
+    - name: Clone Linux VM from Template
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: "Datacenter"
+        cluster: "Cluster01"
+        datastore: "Datastore01"
+        folder: "/"
+        name: "{{ vm_name }}"
+        template: "{{ vm_template }}"
+        state: poweredon
+        
+        # [네트워크 설정]
+        networks:
+          - name: "VM Network"
+            ip: "{{ vm_ip }}"
+            netmask: "255.255.255.0"
+            gateway: "{{ vm_gateway }}"
+        
+        # [Customization] 호스트네임 및 DNS 설정
+        customization:
+          hostname: "{{ vm_name }}"
+          dns_servers:
+            - "{{ vm_dns }}"
+        
+        wait_for_ip_address: yes
+      delegate_to: localhost
+      register: deploy_vm
+
+    - name: Add new host to inventory (메모리에 임시 등록)
+      add_host:
+        hostname: "{{ vm_ip }}"
+        groups: linux_new
+        ansible_user: root
+        ansible_password: "{{ root_password }}"
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
+# ====================================================
+# [2단계] 생성된 리눅스에 접속하여 Nginx 웹서버 설치
+# ====================================================
+- name: 2. Service Configuration Phase (Nginx)
+  hosts: linux_new
+  gather_facts: no
+  
+  tasks:
+    - name: Wait for SSH connection
+      wait_for_connection:
+        timeout: 300
+
+    - name: Install EPEL Repo
+      yum:
+        name: epel-release
+        state: present
+
+    - name: Install Nginx Web Server
+      yum:
+        name: nginx
+        state: present
+
+    - name: Create Custom Index Page
+      copy:
+        dest: /usr/share/nginx/html/index.html
+        content: |
+          <html>
+          <body style="background-color:black; color:white; text-align:center; padding-top:100px;">
+            <h1>🚀 H-CMP Automation Success!</h1>
+            <h2>Service: {{ vm_name }}</h2>
+            <p>Deployed by Ansible & Python</p>
+          </body>
+          </html>          
+
+    - name: Start & Enable Nginx Service
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Open Firewall Port 80
+      firewalld:
+        service: http
+        permanent: yes
+        state: enabled
+        immediate: yes

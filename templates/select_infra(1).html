@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H-CMP | Infrastructure Selection</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f2f3f3;
+        }
+
+        .aws-header {
+            background-color: #232f3e;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-transition {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="aws-header text-white h-16 flex items-center justify-between px-6 shadow-md z-10 w-full relative">
+        <div class="flex items-center space-x-3">
+            <i data-lucide="layers" class="w-8 h-8 text-orange-500"></i>
+            <span class="text-xl font-bold tracking-tight">H-CMP <span class="text-gray-400 text-sm font-normal">Hybrid
+                    Cloud Management Platform</span></span>
+        </div>
+        <!-- GNB Step Indicator -->
+        <div class="hidden md:flex items-center gap-2 text-sm absolute left-1/2 transform -translate-x-1/2">
+            <div class="flex items-center gap-2 px-3 py-1 bg-[#ec7211] rounded-full font-bold text-white shadow-sm">
+                <span
+                    class="w-5 h-5 rounded-full bg-white text-[#ec7211] flex items-center justify-center text-xs">1</span>
+                <span>Select Infra</span>
+            </div>
+            <div class="w-8 h-px bg-gray-600"></div>
+            <div class="flex items-center gap-2 px-3 py-1 text-gray-400 font-medium">
+                <span
+                    class="w-5 h-5 rounded-full border border-gray-500 flex items-center justify-center text-xs">2</span>
+                <span>Configure & Provision</span>
+            </div>
+            <div class="w-8 h-px bg-gray-600"></div>
+            <div class="flex items-center gap-2 px-3 py-1 text-gray-400 font-medium">
+                <span
+                    class="w-5 h-5 rounded-full border border-gray-500 flex items-center justify-center text-xs">3</span>
+                <span>Operations</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex items-center justify-center p-6">
+        <div class="max-w-5xl w-full">
+
+            <div class="text-center mb-12">
+                <h1 class="text-3xl font-bold text-gray-800 mb-3">인프라 구축 환경을 선택하세요</h1>
+                <p class="text-gray-600">Public Cloud와 Private Cloud 중 원하는 배포 환경을 선택하여 시작할 수 있습니다.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 px-4">
+
+                <!-- AWS Card -->
+                <a href="/aws-console"
+                    class="group block bg-white rounded-lg overflow-hidden border border-gray-200 card-transition card-hover relative h-80 flex flex-col">
+                    <div class="h-2 w-full bg-[#ec7211]"></div>
+                    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+                        <div class="bg-orange-50 p-4 rounded-full mb-6 group-hover:bg-orange-100 transition-colors">
+                            <i data-lucide="cloud" class="w-16 h-16 text-[#ec7211]"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2 group-hover:text-[#ec7211] transition-colors">
+                            Public Cloud (AWS)</h2>
+                        <p class="text-gray-500 leading-relaxed px-4">
+                            Terraform & Ansible 기반<br>
+                            AWS 클라우드 자원 자동 프로비저닝
+                        </p>
+                    </div>
+                    <div class="bg-gray-50 p-4 text-center border-t border-gray-100">
+                        <span class="text-[#ec7211] font-semibold text-sm flex items-center justify-center">
+                            콘솔 접속하기 <i data-lucide="arrow-right" class="w-4 h-4 ml-1"></i>
+                        </span>
+                    </div>
+                </a>
+
+                <!-- vSphere Card -->
+                <a href="/private-console"
+                    class="group block bg-white rounded-lg overflow-hidden border border-gray-200 card-transition card-hover relative h-80 flex flex-col">
+                    <div class="h-2 w-full bg-[#1d4ed8]"></div>
+                    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+                        <div class="bg-blue-50 p-4 rounded-full mb-6 group-hover:bg-blue-100 transition-colors">
+                            <i data-lucide="server" class="w-16 h-16 text-[#1d4ed8]"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2 group-hover:text-[#1d4ed8] transition-colors">
+                            Private Cloud (vSphere)</h2>
+                        <p class="text-gray-500 leading-relaxed px-4">
+                            vCenter 연동<br>
+                            온프레미스 데이터센터 자원 통합 관리
+                        </p>
+                    </div>
+                    <div class="bg-gray-50 p-4 text-center border-t border-gray-100">
+                        <span class="text-[#1d4ed8] font-semibold text-sm flex items-center justify-center">
+                            콘솔 접속하기 <i data-lucide="arrow-right" class="w-4 h-4 ml-1"></i>
+                        </span>
+                    </div>
+                </a>
+
+            </div>
+
+            <div class="mt-16 text-center text-gray-400 text-sm">
+                &copy; 2024 H-CMP Platform. All rights reserved.
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

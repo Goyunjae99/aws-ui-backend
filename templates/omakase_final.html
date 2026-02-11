@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solution Omakase | H-CMP (AWS Style)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #f2f3f3;
+            /* AWS Light Background */
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.99);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* AWS Colors & Utilities */
+        .aws-header-bg {
+            background-color: #232f3e;
+        }
+
+        .aws-dark-text {
+            color: #16191f;
+        }
+
+        .aws-orange-bg {
+            background-color: #ec7211;
+        }
+
+        .aws-orange-bg:hover {
+            background-color: #eb5f07;
+        }
+
+        .aws-btn {
+            background-color: #ec7211;
+            color: #ffffff;
+            font-weight: 700;
+            transition: all 0.2s;
+            border: 1px solid #ec7211;
+        }
+
+        .aws-btn:hover {
+            background-color: #eb5f07;
+            border-color: #dd5906;
+        }
+
+        .aws-btn-secondary {
+            background-color: #ffffff;
+            color: #545b64;
+            border: 1px solid #545b64;
+        }
+
+        .aws-btn-secondary:hover {
+            background-color: #f8f8f8;
+            color: #16191f;
+            border-color: #16191f;
+        }
+
+        .aws-input {
+            width: 100%;
+            border: 1px solid #d5dbdb;
+            border-radius: 4px;
+            /* rounded-md */
+            padding: 8px 12px;
+            font-size: 14px;
+            color: #16191f;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .aws-input:focus {
+            border-color: #ec7211;
+            box-shadow: 0 0 0 1px #ec7211;
+        }
+
+        .card-active {
+            border: 2px solid #ec7211 !important;
+            background-color: #fff7ee !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .node-enter {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .console-font {
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        /* Checkbox Style */
+        .pkg-checkbox:checked+div {
+            background-color: #fff7ee;
+            border-color: #ec7211;
+            color: #ec7211;
+        }
+
+        .pkg-checkbox:checked+div .icon-check {
+            display: block;
+        }
+
+        /* [AWS Architecture Visualization CSS] */
+        .aws-vpc {
+            border: 2px solid #879596;
+            border-radius: 8px;
+            padding: 24px;
+            position: relative;
+            background-color: #ffffff;
+            margin: 0 auto;
+            max-width: 800px;
+            width: 100%;
+            transition: transform 0.3s ease;
+        }
+
+        .vpc-label {
+            position: absolute;
+            top: -10px;
+            left: 16px;
+            background: #879596;
+            color: white;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .aws-subnet-public,
+        .aws-subnet-private {
+            border: 2px dashed #0073bb;
+            border-radius: 6px;
+            padding: 20px;
+            position: relative;
+            background-color: #fbfbfb;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            min-height: 80px;
+        }
+
+        .aws-subnet-private {
+            border-color: #1d8102;
+            background-color: #f7f9f7;
+        }
+
+        .subnet-label {
+            position: absolute;
+            top: -9px;
+            left: 12px;
+            background: #ffffff;
+            color: #545b64;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 0 6px;
+            border: 1px solid #d5dbdb;
+            border-radius: 4px;
+        }
+
+        .connection-arrow {
+            display: flex;
+            justify-content: center;
+            margin: -10px 0 6px 0;
+            color: #545b64;
+        }
+
+        .resource-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #d5dbdb;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            min-width: 80px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .resource-card:hover {
+            border-color: #ec7211;
+        }
+
+        .res-icon-box {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        /* [Console Styles] */
+        .cf-table-header {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr 2fr;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #545b64;
+            border-bottom: 2px solid #d5dbdb;
+            padding: 8px 12px;
+            background: #fafafa;
+        }
+
+        .cf-event-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr 2fr;
+            gap: 8px;
+            font-size: 11px;
+            color: #16191f;
+            border-bottom: 1px solid #eaeded;
+            padding: 8px 12px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .cf-status-progress {
+            color: #ec7211;
+            font-weight: 600;
+        }
+
+        .cf-status-complete {
+            color: #1d8102;
+            font-weight: 600;
+        }
+
+        .scale-fit {
+            transform: scale(0.85);
+            transform-origin: top center;
+            width: 100%;
+        }
+
+        .slide-in-right {
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+            }
+
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        /* [Global] */
+        .nav-item:hover {
+            color: #ec7211;
+        }
+
+        .nav-item.active {
+            color: #ec7211;
+            font-weight: bold;
+            border-left: 3px solid #ec7211;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-[#16191f]">
+    <div id="landing-page" class="min-h-screen flex flex-col bg-white overflow-y-auto">
+        <nav class="px-8 py-4 flex justify-between items-center sticky top-0 bg-[#232f3e] z-50 shadow-md">
+            <div class="flex items-center gap-2 font-bold text-lg text-white cursor-pointer"
+                onclick="location.reload()">
+                <i data-lucide="box" class="text-[#ff9900]"></i> AWS Solution Consoler
+            </div>
+            <div class="flex gap-6 items-center">
+                <button onclick="openLoginModal()"
+                    class="aws-btn px-6 py-1.5 rounded text-sm shadow hover:shadow-lg">Console 로그인</button>
+            </div>
+        </nav>
+        <main class="flex-1 flex flex-col items-center justify-center text-center px-4 py-20 bg-[#f2f3f3]">
+            <span class="text-[#ec7211] font-bold text-xs mb-4 uppercase tracking-widest">Cloud Engineering
+                Platform</span>
+            <h1 class="text-4xl md:text-6xl font-extrabold text-[#232f3e] mb-6 leading-tight">
+                Build your architecture<br><span class="text-[#ec7211]">in seconds.</span>
+            </h1>
+            <p class="text-[#545b64] text-lg max-w-2xl mb-10 leading-relaxed">
+                Select a verified pattern. We automatically design and provision the optimal hybrid cloud
+                infrastructure.
+            </p>
+            <button onclick="openLoginModal()"
+                class="aws-btn px-10 py-4 rounded text-lg shadow-md flex items-center gap-2 group">
+                프로젝트 생성하기 <i data-lucide="arrow-right" class="group-hover:translate-x-1 transition"></i>
+            </button>
+        </main>
+    </div>
+
+    <div id="login-modal"
+        class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 bg-[#232f3e]/80 backdrop-blur-sm fade-in">
+        <div
+            class="bg-white w-full max-w-sm rounded shadow-2xl overflow-hidden p-8 relative border-t-4 border-[#ec7211]">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i
+                    data-lucide="x"></i></button>
+            <div class="text-[#232f3e] flex flex-col items-center justify-center mx-auto mb-6">
+                <i data-lucide="user-check" class="w-10 h-10 text-[#ec7211] mb-2"></i>
+                <h2 class="text-xl font-bold">Admin Sign-in</h2>
+            </div>
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="block text-xs font-bold text-[#545b64] mb-1">Account ID</label>
+                    <input type="text" id="login_id" class="aws-input" placeholder="admin">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-[#545b64] mb-1">Password</label>
+                    <input type="password" id="login_pw" onkeydown="if(event.key==='Enter') tryLogin()"
+                        class="aws-input" placeholder="••••">
+                </div>
+            </div>
+            <button onclick="tryLogin()" id="btn-login"
+                class="w-full aws-btn py-2.5 rounded font-bold mt-8 shadow hover:bg-[#eb5f07] transition">Sign
+                In</button>
+        </div>
+    </div>
+
+    <div id="settings-modal"
+        class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 bg-[#232f3e]/50 backdrop-blur-sm fade-in">
+        <div class="bg-white w-full max-w-md rounded-md shadow-2xl overflow-hidden relative">
+            <div class="bg-[#f2f3f3] px-6 py-4 border-b border-[#d5dbdb] flex justify-between items-center">
+                <h3 class="font-bold text-[#16191f] text-sm">Preferences</h3>
+                <button onclick="closeSettingsModal()" class="text-[#545b64] hover:text-[#16191f]"><i data-lucide="x"
+                        class="w-4 h-4"></i></button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div>
+                    <label class="block text-xs font-bold text-[#545b64] mb-1">API Endpoint</label>
+                    <input type="text" class="aws-input bg-gray-50 from-gray-50" value="https://api.omakase.internal/v1"
+                        readonly>
+                    <p class="text-[10px] text-gray-500 mt-1">Read-only in current session.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-[#545b64] mb-1">Region</label>
+                    <select class="aws-input bg-white">
+                        <option value="ap-northeast-2" selected>Asia Pacific (Seoul)</option>
+                        <option value="us-east-1">US East (N. Virginia)</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="chk-dark"
+                        class="rounded border-gray-300 text-[#ec7211] focus:ring-[#ec7211]">
+                    <label for="chk-dark" class="text-xs font-medium text-[#16191f]">Enable Experimental Dark
+                        Mode</label>
+                </div>
+            </div>
+            <div class="bg-[#f8f9fa] px-6 py-4 flex justify-end gap-3 border-t border-[#d5dbdb]">
+                <button onclick="closeSettingsModal()"
+                    class="aws-btn-secondary px-4 py-1.5 rounded text-sm font-bold">Cancel</button>
+                <button onclick="saveSettings()" class="aws-btn px-4 py-1.5 rounded text-sm">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard-page" class="hidden min-h-screen flex flex-col fade-in relative bg-[#f2f3f3]">
+        <header class="bg-[#232f3e] text-white px-6 py-3 flex justify-between items-center shadow-md z-40">
+            <div class="flex items-center gap-3">
+                <button onclick="location.reload()" class="hover:text-[#ec7211] transition"><i data-lucide="box"
+                        class="w-6 h-6 text-[#ec7211]"></i></button>
+                <h1 class="text-base font-bold tracking-tight">Management Console</h1>
+            </div>
+            <div class="flex items-center gap-4 text-sm">
+                <div class="flex items-center gap-2 text-gray-300">
+                    <span id="session-timer" class="font-mono text-[#ec7211] font-bold">60:00</span>
+                    <button onclick="extendSession()" title="Extend" class="hover:text-white"><i
+                            data-lucide="refresh-cw" class="w-3 h-3"></i></button>
+                </div>
+                <div class="h-4 w-px bg-gray-600"></div>
+                <button onclick="logout()" class="hover:text-[#ec7211] font-bold">Sign Out</button>
+            </div>
+        </header>
+
+        <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+            <nav class="w-full lg:w-16 bg-[#232f3e] flex lg:flex-col items-center py-4 gap-6 border-t border-gray-700">
+                <i onclick="location.reload()" data-lucide="home"
+                    class="w-5 h-5 text-[#ec7211] cursor-pointer hover:scale-110 transition" title="Home"></i>
+                <i onclick="location.href='/monitoring'" data-lucide="activity"
+                    class="w-5 h-5 text-gray-400 hover:text-[#ec7211] cursor-pointer hover:scale-110 transition"
+                    title="Monitoring"></i>
+                <i onclick="location.href='/history'" data-lucide="list"
+                    class="w-5 h-5 text-gray-400 hover:text-[#ec7211] cursor-pointer hover:scale-110 transition"
+                    title="History"></i>
+                <i onclick="openSettingsModal()" data-lucide="settings"
+                    class="w-5 h-5 text-gray-400 hover:text-[#ec7211] cursor-pointer hover:scale-110 transition mt-auto"
+                    title="Settings"></i>
+            </nav>
+
+            <main class="flex-1 p-6 overflow-y-auto">
+                <div class="max-w-6xl mx-auto space-y-6 pb-20">
+                    <div id="page-1" class="space-y-6 fade-in">
+                        <section class="bg-white p-6 rounded border border-[#d5dbdb] shadow-sm">
+                            <h2
+                                class="text-sm font-bold text-[#ec7211] uppercase tracking-wide mb-4 border-b border-[#eaeded] pb-2">
+                                Step 1. Metadata</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-[#545b64] mb-1">Service Name <span
+                                            class="text-red-500">*</span></label>
+                                    <input type="text" id="svc_name" oninput="validateName()"
+                                        placeholder="my-service-app" class="aws-input">
+                                    <p id="name_err"
+                                        class="hidden text-[11px] text-red-600 font-bold mt-1 flex items-center gap-1">
+                                        <i data-lucide="alert-circle" class="w-3 h-3"></i> Lowercase alphanumeric &
+                                        hyphens only
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-[#545b64] mb-1">Environment</label>
+                                    <select id="env_type" class="aws-input bg-white">
+                                        <option value="dev">Development</option>
+                                        <option value="stg">Staging</option>
+                                        <option value="prd">Production</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section>
+                            <h2
+                                class="text-sm font-bold text-[#ec7211] uppercase tracking-wide mb-4 border-b border-[#d5dbdb] pb-2">
+                                Step 2. Quick Start Templates</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div id="tpl-single" onclick="applyTemplate('single')"
+                                    class="bg-white p-4 rounded border border-[#d5dbdb] cursor-pointer hover:border-[#ec7211] transition group shadow-sm flex flex-col gap-2">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <div class="bg-[#f2f3f3] p-1.5 rounded group-hover:bg-[#fff7ee]"><i
+                                                data-lucide="box"
+                                                class="w-4 h-4 text-[#545b64] group-hover:text-[#ec7211]"></i></div>
+                                        <span class="font-bold text-[#16191f]">Single Tier</span>
+                                    </div>
+                                    <p class="text-xs text-[#545b64]">Standalone instance for development.</p>
+                                </div>
+                                <div id="tpl-3tier" onclick="applyTemplate('3tier')"
+                                    class="bg-white p-4 rounded border border-[#d5dbdb] cursor-pointer hover:border-[#ec7211] transition group shadow-sm flex flex-col gap-2 relative overflow-hidden card-active">
+                                    <div
+                                        class="absolute top-0 right-0 bg-[#ec7211] text-white text-[10px] font-bold px-2 py-0.5 rounded-bl">
+                                        RECOMMENDED</div>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <div class="bg-[#f2f3f3] p-1.5 rounded group-hover:bg-[#fff7ee]"><i
+                                                data-lucide="layers"
+                                                class="w-4 h-4 text-[#545b64] group-hover:text-[#ec7211]"></i></div>
+                                        <span class="font-bold text-[#16191f]">Standard 3-Tier</span>
+                                    </div>
+                                    <p class="text-xs text-[#545b64]">Standard Web-App-DB separation pattern.</p>
+                                </div>
+                                <div id="tpl-ha" onclick="applyTemplate('ha')"
+                                    class="bg-white p-4 rounded border border-[#d5dbdb] cursor-pointer hover:border-[#ec7211] transition group shadow-sm flex flex-col gap-2">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <div class="bg-[#f2f3f3] p-1.5 rounded group-hover:bg-[#fff7ee]"><i
+                                                data-lucide="zap"
+                                                class="w-4 h-4 text-[#545b64] group-hover:text-[#ec7211]"></i></div>
+                                        <span class="font-bold text-[#16191f]">High Performance</span>
+                                    </div>
+                                    <p class="text-xs text-[#545b64]">Scale-out architecture for high traffic.</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div id="page-2" class="space-y-6 hidden fade-in">
+                        <section class="bg-white p-6 rounded border border-[#d5dbdb] shadow-sm relative">
+                            <button onclick="backToPage1()"
+                                class="absolute top-6 right-6 text-xs text-[#545b64] hover:text-[#ec7211] flex items-center gap-1 transition font-bold"><i
+                                    data-lucide="arrow-left" class="w-3 h-3"></i> Back</button>
+                            <h2
+                                class="text-sm font-bold text-[#ec7211] uppercase tracking-wide mb-6 border-b border-[#eaeded] pb-2">
+                                Step 3. Stack Detail</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+                                <div class="md:col-span-5 space-y-6">
+                                    <div class="space-y-2 hidden">
+                                        <select id="traffic_level"
+                                            onchange="resetTemplateSelection(); updateArchitecture()"></select>
+                                        <select id="ha_level"
+                                            onchange="resetTemplateSelection(); updateArchitecture()"></select>
+                                    </div>
+                                    <div class="bg-[#f8f9fa] p-4 rounded border border-[#eaeded]">
+                                        <span
+                                            class="text-[10px] font-bold text-[#545b64] uppercase tracking-widest">Network
+                                            Rules</span>
+                                        <div id="dynamic-network" class="mt-2 space-y-1"></div>
+                                    </div>
+                                </div>
+                                <div class="md:col-span-7 space-y-4">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-xs font-bold text-[#545b64]">Select Packages</span>
+                                        <span
+                                            class="text-[10px] text-[#ec7211] font-bold cursor-pointer hover:underline"
+                                            onclick="resetSoftware()">Reset</span>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-[10px] font-bold text-[#879596] uppercase mb-2">LB & HA</h4>
+                                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-2" id="pkg-grp-ha"></div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-[10px] font-bold text-[#879596] uppercase mb-2">Web Server</h4>
+                                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-2" id="pkg-grp-web"></div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-[10px] font-bold text-[#879596] uppercase mb-2">Application</h4>
+                                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-2" id="pkg-grp-prog"></div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-[10px] font-bold text-[#879596] uppercase mb-2">Database</h4>
+                                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-2" id="pkg-grp-db"></div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-[10px] font-bold text-[#879596] uppercase mb-2">Tools</h4>
+                                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-2" id="pkg-grp-ops"></div>
+                                    </div>
+                                    <div id="upload-step" class="hidden mt-4 pt-4 border-t border-[#eaeded]">
+                                        <h4 class="text-xs font-bold text-[#ec7211] mb-2 flex items-center gap-2"><i
+                                                data-lucide="upload-cloud" class="w-3 h-3"></i> Source Code</h4>
+                                        <div class="flex items-center gap-3">
+                                            <input type="file"
+                                                class="block w-full text-xs text-[#545b64] file:mr-4 file:py-1.5 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-[#ec7211] file:text-white hover:file:bg-[#dd6b10] transition" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-8 pt-6 border-t border-[#eaeded] flex justify-end">
+                                <button onclick="goToPage3()"
+                                    class="aws-btn px-8 py-2.5 rounded shadow flex items-center gap-2 group">Next:
+                                    Review <i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div id="page-3" class="hidden fade-in">
+                        <section class="bg-white p-6 rounded border border-[#d5dbdb] shadow-sm relative mb-8">
+                            <button onclick="backToPage2()"
+                                class="absolute top-6 right-6 text-xs text-[#545b64] hover:text-[#ec7211] flex items-center gap-1 transition font-bold"><i
+                                    data-lucide="edit-2" class="w-3 h-3"></i> Edit</button>
+                            <h2 class="text-xl font-bold text-[#232f3e] mb-1">Configuration Review</h2>
+                            <p class="text-[#545b64] text-xs mb-6">Confirm your architecture blueprint before
+                                provisioning.</p>
+
+                            <div class="bg-[#f8f9fa] rounded border border-[#eaeded] p-5 text-left mb-6">
+                                <div id="final-summary-content" class="space-y-4"></div>
+                            </div>
+
+                            <div
+                                class="bg-white p-6 rounded border border-[#d5dbdb] relative min-h-[300px] flex flex-col items-center">
+                                <h3 class="text-xs font-bold text-[#ec7211] uppercase tracking-widest mb-4 z-10">
+                                    Blueprint Visualization</h3>
+                                <div id="final-arch-content" class="w-full"></div>
+                            </div>
+
+                            <button onclick="startProvision()" id="btn-provision-final"
+                                class="w-full max-w-sm mx-auto aws-btn py-3 rounded-md font-bold text-base shadow mt-8 flex items-center justify-center gap-2">
+                                <i data-lucide="rocket" class="w-5 h-5"></i> Launch Instance
+                            </button>
+                        </section>
+                    </div>
+
+                    <section id="main-arch-section" class="bg-white p-6 rounded border border-[#d5dbdb] shadow-sm mt-6">
+                        <h2 class="text-sm font-bold text-[#ec7211] uppercase tracking-wide mb-4">Step 4. Architecture
+                            Preview</h2>
+                        <div id="arch-content-wrapper" class="w-full py-2"></div>
+                    </section>
+                </div>
+            </main>
+
+            <div id="console-panel"
+                class="hidden fixed inset-y-0 right-0 w-full lg:w-[600px] bg-white text-[#16191f] shadow-2xl z-50 flex flex-col border-l border-[#d5dbdb] slide-in-right">
+                <div class="px-6 py-4 bg-[#232f3e] text-white flex justify-between items-center shadow-sm shrink-0">
+                    <div>
+                        <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="activity"
+                                class="text-[#ec7211]"></i> CloudFormation Stack</h3>
+                        <p class="text-xs text-gray-300 mt-0.5" id="stack-id-disp">Stack ID:
+                            arn:aws:cloudformation:ap-northeast-2:...</p>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-hidden flex flex-col p-4 bg-[#f2f3f3]">
+                    <div
+                        class="bg-white border border-[#d5dbdb] rounded flex-1 flex flex-col shadow-sm overflow-hidden">
+                        <div class="cf-table-header shrink-0">
+                            <div>Timestamp</div>
+                            <div>Logical ID</div>
+                            <div>Status</div>
+                            <div>Status Reason</div>
+                        </div>
+                        <div id="cf-events-container" class="overflow-y-auto p-1 custom-scrollbar flex-1"></div>
+                    </div>
+                </div>
+                <div class="p-4 bg-white border-t border-[#d5dbdb] shrink-0">
+                    <button onclick="location.reload()" id="btn-finish"
+                        class="hidden w-full aws-btn py-2 rounded font-bold shadow hover:bg-[#eb5f07] flex items-center justify-center gap-2">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Go to Dashboard
+                    </button>
+                    <div id="deploy-spinner"
+                        class="text-center py-2 text-xs text-[#545b64] font-bold flex justify-center items-center gap-2">
+                        <i data-lucide="loader-2" class="animate-spin text-[#ec7211]"></i> Provisioning resources...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let config = { traffic: 'mid', ha: 'ha', dr: 'basic', packages: [], network: '' };
+        const availableSoftware = [
+            { id: 'haproxy', name: 'HAProxy', cat: 'LB' }, { id: 'patroni', name: 'Patroni', cat: 'Failover' },
+            { id: 'nginx', name: 'Nginx', cat: 'Web' }, { id: 'tomcat', name: 'Tomcat', cat: 'Web/WAS' },
+            { id: 'python', name: 'Python', cat: 'App' }, { id: 'nodejs', name: 'Node.js', cat: 'App' },
+            { id: 'postgres', name: 'PostgreSQL', cat: 'DB' }, { id: 'mysql', name: 'MySQL', cat: 'DB' },
+            { id: 'redis', name: 'Redis', cat: 'Cache' }, { id: 'elasticsearch', name: 'Elasticsearch', cat: 'Log' },
+            { id: 'kibana', name: 'Kibana', cat: 'Mon' }, { id: 'jenkins', name: 'Jenkins', cat: 'CI/CD' },
+            { id: 'docker', name: 'Docker', cat: 'Cont' }
+        ];
+        const SESSION_DURATION = 60 * 60 * 1000;
+        let timerInterval = null;
+
+        window.onload = function () {
+            renderPackageGrid(); updateArchitecture(); checkSession(); fetchPublicSettings();
+        };
+
+        async function fetchPublicSettings() { try { const res = await fetch('/api/public/settings'); if (res.ok) { /* ... */ } } catch (e) { } }
+        function checkSession() {
+            const expiresAt = localStorage.getItem('omakase_expires_at');
+            if (expiresAt) { const now = Date.now(); if (now < expiresAt) { showDashboard(); startSessionTimer(expiresAt); } else { logout(); } }
+        }
+        function startSessionTimer(expiresAt) {
+            clearInterval(timerInterval);
+            function update() {
+                const now = Date.now(); const diff = expiresAt - now;
+                if (diff <= 0) { clearInterval(timerInterval); logout(); return; }
+                const minutes = Math.floor(diff / 60000); const seconds = Math.floor((diff % 60000) / 1000);
+                document.getElementById('session-timer').innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+            update(); timerInterval = setInterval(update, 1000);
+        }
+        function extendSession() { const newExpires = Date.now() + SESSION_DURATION; localStorage.setItem('omakase_expires_at', newExpires); startSessionTimer(newExpires); alert("Session extended."); }
+        function logout() { localStorage.removeItem('omakase_expires_at'); location.reload(); }
+        function showDashboard() { document.getElementById('landing-page').classList.add('hidden'); document.getElementById('login-modal').classList.add('hidden'); document.getElementById('dashboard-page').classList.remove('hidden'); document.getElementById('dashboard-page').classList.add('flex'); window.scrollTo(0, 0); }
+        function openLoginModal() { document.getElementById('login-modal').classList.remove('hidden'); document.getElementById('login_id').focus(); }
+        function closeLoginModal() { document.getElementById('login-modal').classList.add('hidden'); }
+        async function tryLogin() {
+            const id = document.getElementById('login_id').value; const pw = document.getElementById('login_pw').value; const btn = document.getElementById('btn-login');
+            if (!id || !pw) { alert("Please enter ID and Password."); return; }
+            const orgText = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin inline mr-2"></i> Verifying...`; btn.disabled = true; lucide.createIcons();
+            try {
+                const response = await fetch('api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: id, password: pw }) });
+                if (response.ok) {
+                    const expiresAt = Date.now() + SESSION_DURATION; localStorage.setItem('omakase_expires_at', expiresAt);
+                    showDashboard(); startSessionTimer(expiresAt); fetchPublicSettings();
+                } else { alert("❌ Login Failed"); btn.innerHTML = orgText; btn.disabled = false; }
+            } catch (e) { alert("Server Error"); btn.innerHTML = orgText; btn.disabled = false; }
+        }
+
+        // Settings Modal Functions
+        function openSettingsModal() { document.getElementById('settings-modal').classList.remove('hidden'); }
+        function closeSettingsModal() { document.getElementById('settings-modal').classList.add('hidden'); }
+        function saveSettings() { closeSettingsModal(); alert("Settings saved (Simulated)"); }
+
+        function validateName() {
+            const input = document.getElementById('svc_name'); const err = document.getElementById('name_err'); const btn = document.getElementById('btn-provision-final');
+            if (/[^a-z0-9-]/.test(input.value)) { err.classList.remove('hidden'); input.classList.add('border-red-500'); btn.disabled = true; }
+            else { err.classList.add('hidden'); input.classList.remove('border-red-500'); btn.disabled = false; }
+        }
+        function resetTemplateSelection() { document.querySelectorAll('[id^="tpl-"]').forEach(el => el.classList.remove('card-active')); }
+        function renderPackageGrid() {
+            const render = (list) => list.map(sw => `<label class="cursor-pointer group select-none"><input type="checkbox" name="pkg" value="${sw.id}" class="pkg-checkbox hidden" onchange="updateSelectedPackages()"><div class="border border-[#d5dbdb] rounded p-2 hover:border-[#ec7211] transition flex items-center justify-between bg-white h-full shadow-sm"><div class="flex flex-col"><span class="text-xs font-bold text-[#16191f] group-hover:text-[#ec7211]">${sw.name}</span><span class="text-[9px] text-gray-400 font-mono">${sw.cat}</span></div><i data-lucide="check-circle" class="icon-check w-3 h-3 text-[#ec7211] hidden"></i></div></label>`).join('');
+            const ha = availableSoftware.filter(s => ['haproxy', 'patroni'].includes(s.id));
+            const web = availableSoftware.filter(s => ['nginx', 'tomcat'].includes(s.id));
+            const prog = availableSoftware.filter(s => ['python', 'nodejs'].includes(s.id));
+            const db = availableSoftware.filter(s => ['postgres', 'mysql', 'redis'].includes(s.id));
+            const ops = availableSoftware.filter(s => ['elasticsearch', 'kibana', 'jenkins', 'docker'].includes(s.id));
+            document.getElementById('pkg-grp-ha').innerHTML = render(ha);
+            document.getElementById('pkg-grp-web').innerHTML = render(web);
+            document.getElementById('pkg-grp-prog').innerHTML = render(prog);
+            document.getElementById('pkg-grp-db').innerHTML = render(db);
+            document.getElementById('pkg-grp-ops').innerHTML = render(ops);
+            lucide.createIcons();
+        }
+        function updateSelectedPackages() {
+            const checkboxes = document.querySelectorAll('input[name="pkg"]:checked');
+            config.packages = [];
+            checkboxes.forEach(chk => { const sw = availableSoftware.find(s => s.id === chk.value); if (sw) config.packages.push(sw.name); });
+            updateArchitecture();
+            const hasWeb = Array.from(checkboxes).some(c => ['nginx', 'tomcat', 'python', 'nodejs'].includes(c.value));
+            document.getElementById('upload-step').classList.toggle('hidden', !hasWeb);
+        }
+        function resetSoftware() { document.querySelectorAll('input[name="pkg"]').forEach(el => el.checked = false); updateSelectedPackages(); }
+        function applyTemplate(type) {
+            document.getElementById('page-1').classList.add('hidden'); document.getElementById('page-2').classList.remove('hidden'); document.getElementById('main-arch-section').classList.remove('hidden');
+            window.scrollTo(0, 0); resetTemplateSelection(); document.getElementById(`tpl-${type}`).classList.add('card-active');
+            const ts = document.getElementById('traffic_level'), hs = document.getElementById('ha_level');
+            if (type === 'single') { ts.value = 'low'; hs.value = 'single'; selectPackages(['nginx', 'mysql', 'python']); }
+            else if (type === '3tier') { ts.value = 'mid'; hs.value = 'ha'; selectPackages(['haproxy', 'nginx', 'tomcat', 'python', 'postgres', 'patroni']); }
+            else { ts.value = 'high'; hs.value = 'ha'; selectPackages(['haproxy', 'nginx', 'redis', 'postgres', 'elasticsearch', 'kibana', 'patroni']); }
+            updateArchitecture();
+        }
+        function backToPage1() { document.getElementById('page-2').classList.add('hidden'); document.getElementById('page-1').classList.remove('hidden'); window.scrollTo(0, 0); }
+        function backToPage2() { document.getElementById('page-3').classList.add('hidden'); document.getElementById('page-2').classList.remove('hidden'); document.getElementById('main-arch-section').classList.remove('hidden'); window.scrollTo(0, 0); }
+        function goToPage3() {
+            document.getElementById('page-2').classList.add('hidden'); document.getElementById('page-3').classList.remove('hidden'); document.getElementById('main-arch-section').classList.add('hidden');
+            updateSummaryView();
+            const content = document.getElementById('arch-content-wrapper').innerHTML;
+            const target = document.getElementById('final-arch-content');
+            target.innerHTML = content;
+            const vpcDiv = target.querySelector('.aws-vpc'); if (vpcDiv) { vpcDiv.classList.add('scale-fit'); }
+            lucide.createIcons(); window.scrollTo(0, 0);
+        }
+        function selectPackages(ids) { resetSoftware(); ids.forEach(id => { const chk = document.querySelector(`input[name="pkg"][value="${id}"]`); if (chk) chk.checked = true; }); updateSelectedPackages(); }
+
+        // [MODIFIED] Resource Manifest Update (AWS Terminology)
+        function updateSummaryView() {
+            const container = document.getElementById('final-summary-content');
+            const pkgs = config.packages.length > 0 ? config.packages.join(', ') : 'None';
+            let archText = "Custom";
+            let resText = "EC2 (Web), RDS (DB)"; // Default
+
+            if (document.querySelector('#tpl-single.card-active')) {
+                archText = "Single Tier";
+                resText = "EC2 (Web + App)";
+            } else if (document.querySelector('#tpl-3tier.card-active')) {
+                archText = "Standard 3-Tier";
+                resText = "ALB (Load Balancer), EC2 (Web), RDS (DB Master/Slave)";
+            } else if (document.querySelector('#tpl-ha.card-active')) {
+                archText = "High Performance";
+                resText = "ALB (Auto Scaling), EC2 (Web x4), RDS (DB Multi-AZ)";
+            }
+
+            container.innerHTML = `
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div><span class="block text-xs text-gray-500 font-bold mb-1">Architecture</span><span class="font-medium text-[#16191f]">${archText}</span></div>
+                    <div><span class="block text-xs text-gray-500 font-bold mb-1">AWS Resources</span><span class="font-medium text-[#ec7211]">${resText}</span></div>
+                    <div class="col-span-2"><span class="block text-xs text-gray-500 font-bold mb-1">Selected Packages</span><span class="font-medium text-[#16191f]">${pkgs}</span></div>
+                </div>
+            `;
+        }
+
+        function updateArchitecture() {
+            config.traffic = document.getElementById('traffic_level').value; config.ha = document.getElementById('ha_level').value;
+            let wc = config.traffic === 'mid' ? 2 : (config.traffic === 'high' ? 4 : 1); if (config.ha === 'ha' && wc < 2) wc = 2; let dc = (config.ha === 'ha' || config.traffic === 'high') ? 2 : 1;
+            let net_items = [];
+            if (config.traffic === 'low' && config.ha === 'single') net_items = ["Default VPC", "Public Subnet (VLAN 10)"];
+            else if (config.traffic === 'high') net_items = ["Custom VPC", "Multi-AZ Distribution", "Private Links"];
+            else net_items = ["Custom VPC", "Public/Private Subnet Separation", "Security Groups Inbound/Outbound"];
+            config.network = net_items.join(", ");
+            document.getElementById('dynamic-network').innerHTML = net_items.map(i => `<div class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-600"></i><span class="text-xs text-[#545b64]">${i}</span></div>`).join('');
+            const checkedBoxes = Array.from(document.querySelectorAll('input[name="pkg"]:checked'));
+            const checkedIds = checkedBoxes.map(cb => cb.value);
+            const getCard = (label, iconName, colorClass, subLabel = '') => `
+                <div class="resource-card node-enter">
+                    <div class="res-icon-box ${colorClass}"><i data-lucide="${iconName}" class="w-4 h-4"></i></div>
+                    <span class="text-[10px] font-bold text-[#16191f] text-center leading-tight">${label}</span>
+                    ${subLabel ? `<span class="text-[8px] text-gray-400 font-mono">${subLabel}</span>` : ''}
+                </div>
+            `;
+            let publicNodes = '', privateNodes = '';
+            const hasLb = config.ha === 'ha' || checkedIds.includes('haproxy');
+            if (hasLb) publicNodes += getCard('ELB', 'network', 'bg-[#6cae3e]', 'ALB');
+            for (let i = 0; i < wc; i++) { publicNodes += getCard(`EC2-Web0${i + 1}`, 'server', 'bg-[#ec7211]', 't3.micro'); }
+            privateNodes += getCard('RDS-Primary', 'database', 'bg-[#3b48cc]', 'db.m5');
+            if (dc > 1) { privateNodes += getCard('RDS-Replica', 'database', 'bg-[#3b48cc]', 'db.m5'); }
+            const fullArchHtml = `
+                <div class="aws-vpc">
+                    <div class="vpc-label">AWS VPC</div>
+                    <div class="aws-subnet-public"><span class="subnet-label">Public Subnet</span>${publicNodes}</div>
+                    <div class="connection-arrow"><i data-lucide="arrow-down" class="w-4 h-4"></i></div>
+                    <div class="aws-subnet-private"><span class="subnet-label">Private Subnet</span>${privateNodes}</div>
+                </div>
+            `;
+            document.getElementById('arch-content-wrapper').innerHTML = fullArchHtml;
+            lucide.createIcons();
+        }
+
+        async function startProvision() {
+            const name = document.getElementById('svc_name').value;
+            if (!name || /[^a-z0-9-]/.test(name)) { alert("Check Service Name."); return; }
+            const btn = document.getElementById('btn-provision-final');
+            const org = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin"></i> Initializing...`; btn.disabled = true; lucide.createIcons();
+            try {
+                const res = await fetch('/api/provision', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ serviceName: name, config: config, targetInfra: {} }) });
+                if (res.ok) {
+                    document.getElementById('page-3').classList.add('hidden');
+                    document.getElementById('console-panel').classList.remove('hidden'); document.getElementById('console-panel').classList.add('flex');
+                    document.getElementById('stack-id-disp').innerText = `Stack ID: arn:aws:cloudformation:ap-northeast-2:${Math.floor(Math.random() * 100000000000)}:stack/${name}/${crypto.randomUUID()}`;
+                    runCloudFormationSimulation();
+                } else {
+                    const err = await res.json(); alert("❌ Failed: " + (err.detail || JSON.stringify(err))); btn.innerHTML = org; btn.disabled = false;
+                }
+            } catch (e) { alert("Connection Failed: " + e.message); btn.innerHTML = org; btn.disabled = false; }
+        }
+
+        function runCloudFormationSimulation() {
+            const events = [
+                { id: "AWS::CloudFormation::Stack", status: "CREATE_IN_PROGRESS", reason: "User Initiated" },
+                { id: "AWS::EC2::VPC", status: "CREATE_IN_PROGRESS", reason: "Resource creation Initiated" },
+                { id: "AWS::EC2::VPC", status: "CREATE_COMPLETE", reason: "Properties: { CidrBlock: '10.0.0.0/16' }" },
+                { id: "AWS::EC2::Subnet", status: "CREATE_IN_PROGRESS", reason: "Public Subnet 10.0.1.0/24" },
+                { id: "AWS::EC2::Subnet", status: "CREATE_COMPLETE", reason: "" },
+                { id: "AWS::EC2::SecurityGroup", status: "CREATE_IN_PROGRESS", reason: "Allow HTTP/HTTPS/SSH" },
+                { id: "AWS::EC2::SecurityGroup", status: "CREATE_COMPLETE", reason: "" },
+                { id: "AWS::ElasticLoadBalancingV2::LoadBalancer", status: "CREATE_IN_PROGRESS", reason: "Internet-facing ALB" },
+                { id: "AWS::ElasticLoadBalancingV2::LoadBalancer", status: "CREATE_COMPLETE", reason: "DNS: my-load-balancer-1234.elb.amazonaws.com" },
+                { id: "AWS::EC2::Instance", status: "CREATE_IN_PROGRESS", reason: "Launching t3.micro instances..." },
+                { id: "AWS::EC2::Instance", status: "CREATE_COMPLETE", reason: "i-0a1b2c3d4e5f6g7h8" },
+                { id: "AWS::RDS::DBInstance", status: "CREATE_IN_PROGRESS", reason: "Creating Database..." },
+                { id: "AWS::RDS::DBInstance", status: "CREATE_COMPLETE", reason: "db.m5.large (Multi-AZ)" },
+                { id: "AWS::CloudFormation::Stack", status: "CREATE_COMPLETE", reason: "Stack creation completed successfully." }
+            ];
+            let i = 0; const container = document.getElementById('cf-events-container');
+            function addRow(ev) {
+                const now = new Date(); const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+                const statusClass = ev.status.includes('COMPLETE') ? 'cf-status-complete' : 'cf-status-progress';
+                const html = `<div class="cf-event-row"><div class="font-mono text-xs text-gray-500">${timeStr}</div><div class="font-bold text-xs">${ev.id}</div><div class="text-[10px] ${statusClass}">${ev.status}</div><div class="text-[10px] text-gray-600 truncate">${ev.reason}</div></div>`;
+                container.insertAdjacentHTML('afterbegin', html); container.scrollTop = 0;
+            }
+            function next() {
+                if (i >= events.length) { document.getElementById('deploy-spinner').innerHTML = `<span class="text-emerald-600 font-bold">Stack Create Complete.</span>`; document.getElementById('btn-finish').classList.remove('hidden'); return; }
+                addRow(events[i]); i++; setTimeout(next, 800 + Math.random() * 1000);
+            }
+            next();
+        }
+    </script>
+</body>
+
+</html>

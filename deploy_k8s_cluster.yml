@@ -1,0 +1,129 @@
+---
+# ====================================================
+# [1단계] vCenter에 접속하여 K8s Master VM 생성하기
+# ====================================================
+- name: 1. Kubernetes Node Provisioning
+  hosts: localhost
+  gather_facts: no
+  vars:
+    vcenter_hostname: "192.168.0.100"
+    vcenter_username: "administrator@vsphere.local"
+    vcenter_password: "YourVcenterPassword!"
+    
+    # 파이썬에서 넘어오는 변수 (기본값 설정)
+    vm_template: "CentOS7-Template-v1"
+    vm_name: "{{ target_vm_name | default('K8s-Master') }}"
+    vm_ip: "{{ target_vm_ip | default('192.168.0.210') }}"
+    vm_gateway: "192.168.0.1"
+    vm_dns: "8.8.8.8"
+    root_password: "Password123!"
+
+  tasks:
+    - name: Clone K8s Master VM
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: "Datacenter"
+        cluster: "Cluster01"
+        datastore: "Datastore01"
+        folder: "/"
+        name: "{{ vm_name }}"
+        template: "{{ vm_template }}"
+        state: poweredon
+        networks:
+          - name: "VM Network"
+            ip: "{{ vm_ip }}"
+            netmask: "255.255.255.0"
+            gateway: "{{ vm_gateway }}"
+        customization:
+          hostname: "{{ vm_name }}"
+          dns_servers:
+            - "{{ vm_dns }}"
+        wait_for_ip_address: yes
+      delegate_to: localhost
+      register: deploy_vm
+
+    - name: Add K8s Host to Inventory
+      add_host:
+        hostname: "{{ vm_ip }}"
+        groups: k8s_nodes
+        ansible_user: root
+        ansible_password: "{{ root_password }}"
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
+# ====================================================
+# [2단계] VM 내부 설정 및 Kubernetes 설치
+# ====================================================
+- name: 2. Install Docker & Kubernetes
+  hosts: k8s_nodes
+  gather_facts: no
+  tasks:
+    - name: Wait for SSH
+      wait_for_connection:
+        timeout: 300
+
+    - name: Disable Swap (K8s 필수)
+      shell: |
+        swapoff -a
+        sed -i '/swap/d' /etc/fstab        
+
+    - name: Install Docker Dependencies
+      yum:
+        name: [yum-utils, device-mapper-persistent-data, lvm2]
+        state: present
+
+    - name: Add Docker Repo
+      shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+    - name: Install Docker
+      yum:
+        name: docker-ce
+        state: present
+
+    - name: Start Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add Kubernetes Repo
+      copy:
+        dest: /etc/yum.repos.d/kubernetes.repo
+        content: |
+          [kubernetes]
+          name=Kubernetes
+          baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+          enabled=1
+          gpgcheck=1
+          repo_gpgcheck=1
+          gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg          
+
+    - name: Install Kubeadm, Kubelet, Kubectl
+      yum:
+        name: [kubelet, kubeadm, kubectl]
+        state: present
+
+    - name: Enable Kubelet
+      service:
+        name: kubelet
+        enabled: yes
+        state: started
+
+    - name: Initialize Kubernetes Cluster (Master)
+      shell: kubeadm init --pod-network-cidr=10.244.0.0/16
+      register: kubeadm_output
+      ignore_errors: yes # 이미 초기화된 경우 무시
+
+    - name: Create .kube directory
+      file:
+        path: $HOME/.kube
+        state: directory
+        mode: 0755
+
+    - name: Copy Admin Config
+      shell: cp -f /etc/kubernetes/admin.conf $HOME/.kube/config && chown $(id -u):$(id -g) $HOME/.kube/config
+
+    - name: Install Flannel CNI (Network)
+      shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
