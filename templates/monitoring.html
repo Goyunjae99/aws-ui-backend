@@ -12,15 +12,25 @@
     <style>
         body {
             font-family: 'Pretendard', sans-serif;
-            background-color: #f2f3f3; /* AWS Light BG */
+            background-color: #f2f3f3;
+            /* AWS Light BG */
             color: #16191f;
             overflow: hidden;
         }
 
         /* AWS Colors & Utilities (From omakase_final.html) */
-        .aws-header-bg { background-color: #232f3e; }
-        .aws-dark-text { color: #16191f; }
-        .aws-orange-bg { background-color: #ec7211; }
+        .aws-header-bg {
+            background-color: #232f3e;
+        }
+
+        .aws-dark-text {
+            color: #16191f;
+        }
+
+        .aws-orange-bg {
+            background-color: #ec7211;
+        }
+
         .aws-btn {
             background-color: #ec7211;
             color: #ffffff;
@@ -28,6 +38,7 @@
             transition: all 0.2s;
             border: 1px solid #ec7211;
         }
+
         .aws-btn:hover {
             background-color: #eb5f07;
             border-color: #dd5906;
@@ -36,15 +47,30 @@
         /* Layout */
         .grid-layout {
             display: grid;
-            grid-template-columns: 64px 240px 1fr; /* Global Nav + Local Nav + Content */
-            height: calc(100vh - 56px); /* Header height adjustment */
+            grid-template-columns: 64px 240px 1fr;
+            /* Global Nav + Local Nav + Content */
+            height: calc(100vh - 56px);
+            /* Header height adjustment */
         }
 
         /* Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f2f3f3; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d5dbdb; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f2f3f3;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d5dbdb;
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
 
         /* Local Sidebar Nav (Monitoring Specific) */
         .local-nav-item {
@@ -59,10 +85,12 @@
             transition: all 0.2s;
             border-left: 3px solid transparent;
         }
+
         .local-nav-item:hover {
             background-color: #fafafa;
             color: #16191f;
         }
+
         .local-nav-item.active {
             background-color: #fff;
             color: #ec7211;
@@ -74,7 +102,8 @@
         .dash-card {
             background: #ffffff;
             border: 1px solid #d5dbdb;
-            border-radius: 4px; /* AWS style rounded-sm */
+            border-radius: 4px;
+            /* AWS style rounded-sm */
             padding: 20px;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
             display: flex;
@@ -82,12 +111,31 @@
         }
 
         /* Status Badge */
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-        .status-online { background-color: #10b981; animation: pulse 2s infinite; }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .status-online {
+            background-color: #10b981;
+            animation: pulse 2s infinite;
+        }
+
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
         }
 
         /* Terminal Log */
@@ -104,20 +152,45 @@
 <body class="flex flex-col h-screen">
 
     <!-- Style A Header -->
-    <header class="bg-[#232f3e] text-white px-5 py-3 flex justify-between items-center shadow-md z-50 shrink-0 h-[56px]">
+    <header
+        class="bg-[#232f3e] text-white px-5 py-3 flex justify-between items-center shadow-md z-50 shrink-0 h-[56px]">
         <div class="flex items-center gap-3">
             <button onclick="location.href='/'" class="hover:text-[#ec7211] transition" title="Go Home">
                 <i data-lucide="box" class="w-6 h-6 text-[#ec7211]"></i>
             </button>
-            <h1 class="text-base font-bold tracking-tight">Management Console <span class="text-gray-400 font-normal">| Monitoring</span></h1>
+            <h1 class="text-base font-bold tracking-tight">Management Console <span class="text-gray-400 font-normal">|
+                    Monitoring</span></h1>
         </div>
+
+        <!-- GNB Step Indicator -->
+        <div class="hidden md:flex items-center gap-2 text-sm absolute left-1/2 transform -translate-x-1/2">
+            <div class="flex items-center gap-2 px-3 py-1 text-gray-400 font-medium">
+                <span
+                    class="w-5 h-5 rounded-full border border-gray-500 flex items-center justify-center text-xs">1</span>
+                <span>Select Infra</span>
+            </div>
+            <div class="w-8 h-px bg-gray-600"></div>
+            <div class="flex items-center gap-2 px-3 py-1 text-gray-400 font-medium">
+                <span
+                    class="w-5 h-5 rounded-full border border-gray-500 flex items-center justify-center text-xs">2</span>
+                <span>Configure & Provision</span>
+            </div>
+            <div class="w-8 h-px bg-gray-600"></div>
+            <div class="flex items-center gap-2 px-3 py-1 bg-[#ec7211] rounded-full font-bold text-white shadow-sm">
+                <span
+                    class="w-5 h-5 rounded-full bg-white text-[#ec7211] flex items-center justify-center text-xs">3</span>
+                <span>Operations</span>
+            </div>
+        </div>
+
         <div class="flex items-center gap-4 text-sm">
             <div class="flex items-center gap-2 px-3 py-1 bg-[#16191f] border border-gray-600 rounded-full">
                 <div class="status-dot status-online"></div>
                 <span class="text-xs font-bold text-green-400">System Healthy</span>
             </div>
             <div class="h-4 w-px bg-gray-600"></div>
-            <button class="hover:text-[#ec7211] font-bold text-xs" onclick="location.href='/main_ui'">Expert Mode</button>
+            <button class="hover:text-[#ec7211] font-bold text-xs" onclick="location.href='/main_ui'">Expert
+                Mode</button>
             <div class="h-4 w-px bg-gray-600"></div>
             <div class="text-xs font-bold text-[#ec7211]">Admin</div>
         </div>
@@ -127,10 +200,10 @@
         <!-- 1. Global Sidebar (Style A) -->
         <nav class="bg-[#232f3e] flex flex-col items-center py-4 gap-6 border-t border-gray-700">
             <i onclick="location.href='/'" data-lucide="home"
-                class="w-5 h-5 text-gray-400 hover:text-[#ec7211] cursor-pointer hover:scale-110 transition" title="Home"></i>
+                class="w-5 h-5 text-gray-400 hover:text-[#ec7211] cursor-pointer hover:scale-110 transition"
+                title="Home"></i>
             <i onclick="location.reload()" data-lucide="activity"
-                class="w-5 h-5 text-[#ec7211] cursor-pointer hover:scale-110 transition"
-                title="Monitoring"></i>
+                class="w-5 h-5 text-[#ec7211] cursor-pointer hover:scale-110 transition" title="Monitoring"></i>
             <i onclick="location.href='/history'" data-lucide="list"
                 class="w-5 h-5 text-gray-400 hover:text-[#ec7211] cursor-pointer hover:scale-110 transition"
                 title="History"></i>
@@ -154,7 +227,7 @@
 
         <!-- 3. Main Content (Existing Logic) -->
         <div class="flex-1 p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6 bg-[#f2f3f3]">
-            
+
             <!-- Top KPI Cards -->
             <div class="grid grid-cols-4 gap-4">
                 <div class="dash-card">
@@ -176,166 +249,167 @@
                     <div class="text-2xl font-black text-[#16191f]"><span id="val-lat">45</span> <span
                             class="text-sm font-normal text-gray-500">ms</span></div>
                     <div class="text-xs text-gray-400 font-bold mt-1">Target: < 100ms</div>
-                </div>
-
-                <div class="dash-card">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-xs font-bold text-[#545b64] uppercase">Cluster CPU</span>
-                        <i data-lucide="cpu" class="w-4 h-4 text-purple-500"></i>
                     </div>
-                    <div class="text-2xl font-black text-[#16191f]"><span id="val-cpu">24</span>%</div>
-                    <div class="w-full bg-gray-100 h-1.5 mt-3 rounded-full overflow-hidden">
-                        <div id="bar-cpu" class="bg-purple-500 h-full rounded-full transition-all duration-500"
-                            style="width: 24%"></div>
-                    </div>
-                </div>
 
-                <div class="dash-card">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-xs font-bold text-[#545b64] uppercase">Error Rate (5xx)</span>
-                        <i data-lucide="alert-triangle" class="w-4 h-4 text-red-500"></i>
-                    </div>
-                    <div class="text-2xl font-black text-[#16191f]" id="val-err">0.02%</div>
-                    <div class="text-xs text-green-600 font-bold mt-1">Stable</div>
-                </div>
-            </div>
-
-            <!-- Charts Section -->
-            <div class="grid grid-cols-3 gap-4 h-80">
-                <div class="dash-card col-span-2">
-                    <h3 class="text-sm font-bold text-[#16191f] mb-4 flex items-center gap-2">
-                        <i data-lucide="activity" class="w-4 h-4 text-[#ec7211]"></i> Traffic Overview (Live)
-                    </h3>
-                    <div class="flex-1 relative w-full h-full">
-                        <canvas id="trafficChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="dash-card">
-                    <h3 class="text-sm font-bold text-[#16191f] mb-4">Instance Health</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
-                                <span>i-0a2b3c4d (Primary)</span>
-                                <span class="text-green-600">Healthy</span>
-                            </div>
-                            <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                                <div class="bg-green-500 h-full" style="width: 100%"></div>
-                            </div>
+                    <div class="dash-card">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-bold text-[#545b64] uppercase">Cluster CPU</span>
+                            <i data-lucide="cpu" class="w-4 h-4 text-purple-500"></i>
                         </div>
-                        <div>
-                            <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
-                                <span>i-0x9y8z7w (Replica)</span>
-                                <span class="text-green-600">Healthy</span>
-                            </div>
-                            <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                                <div class="bg-green-500 h-full" style="width: 100%"></div>
-                            </div>
-                        </div>
-                        <div class="mt-6 p-3 bg-blue-50 border border-blue-100 rounded text-xs text-blue-700">
-                            <strong>Auto Scaling Info:</strong><br>
-                            Min: 2 / Max: 10 / Desired: 2
+                        <div class="text-2xl font-black text-[#16191f]"><span id="val-cpu">24</span>%</div>
+                        <div class="w-full bg-gray-100 h-1.5 mt-3 rounded-full overflow-hidden">
+                            <div id="bar-cpu" class="bg-purple-500 h-full rounded-full transition-all duration-500"
+                                style="width: 24%"></div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Log Terminal -->
-            <div class="dash-card flex-1 min-h-[200px] bg-[#1e1e1e] border-gray-700 p-0 overflow-hidden">
-                <div class="flex justify-between items-center px-4 py-2 bg-[#252526] border-b border-gray-700">
-                    <div class="text-gray-400 text-xs font-mono font-bold flex items-center gap-2">
-                        <i data-lucide="terminal" class="w-3 h-3"></i> /var/log/nginx/access.log
-                    </div>
-                    <div class="flex gap-1.5">
-                        <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
-                        <div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
-                        <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                    <div class="dash-card">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-bold text-[#545b64] uppercase">Error Rate (5xx)</span>
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-500"></i>
+                        </div>
+                        <div class="text-2xl font-black text-[#16191f]" id="val-err">0.02%</div>
+                        <div class="text-xs text-green-600 font-bold mt-1">Stable</div>
                     </div>
                 </div>
-                <div class="flex-1 p-4 overflow-y-auto custom-scrollbar terminal-bg" id="log-container">
-                    <div class="text-green-400">[INFO] Monitoring Agent started successfully.</div>
-                    <div class="text-gray-500">Connecting to CloudWatch Metrics... OK</div>
-                </div>
-            </div>
 
+                <!-- Charts Section -->
+                <div class="grid grid-cols-3 gap-4 h-80">
+                    <div class="dash-card col-span-2">
+                        <h3 class="text-sm font-bold text-[#16191f] mb-4 flex items-center gap-2">
+                            <i data-lucide="activity" class="w-4 h-4 text-[#ec7211]"></i> Traffic Overview (Live)
+                        </h3>
+                        <div class="flex-1 relative w-full h-full">
+                            <canvas id="trafficChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="dash-card">
+                        <h3 class="text-sm font-bold text-[#16191f] mb-4">Instance Health</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
+                                    <span>i-0a2b3c4d (Primary)</span>
+                                    <span class="text-green-600">Healthy</span>
+                                </div>
+                                <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-green-500 h-full" style="width: 100%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
+                                    <span>i-0x9y8z7w (Replica)</span>
+                                    <span class="text-green-600">Healthy</span>
+                                </div>
+                                <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-green-500 h-full" style="width: 100%"></div>
+                                </div>
+                            </div>
+                            <div class="mt-6 p-3 bg-blue-50 border border-blue-100 rounded text-xs text-blue-700">
+                                <strong>Auto Scaling Info:</strong><br>
+                                Min: 2 / Max: 10 / Desired: 2
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Log Terminal -->
+                <div class="dash-card flex-1 min-h-[200px] bg-[#1e1e1e] border-gray-700 p-0 overflow-hidden">
+                    <div class="flex justify-between items-center px-4 py-2 bg-[#252526] border-b border-gray-700">
+                        <div class="text-gray-400 text-xs font-mono font-bold flex items-center gap-2">
+                            <i data-lucide="terminal" class="w-3 h-3"></i> /var/log/nginx/access.log
+                        </div>
+                        <div class="flex gap-1.5">
+                            <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                            <div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
+                            <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                        </div>
+                    </div>
+                    <div class="flex-1 p-4 overflow-y-auto custom-scrollbar terminal-bg" id="log-container">
+                        <div class="text-green-400">[INFO] Monitoring Agent started successfully.</div>
+                        <div class="text-gray-500">Connecting to CloudWatch Metrics... OK</div>
+                    </div>
+                </div>
+
+            </div>
         </div>
-    </div>
 
-    <script>
-        lucide.createIcons();
+        <script>
+            lucide.createIcons();
 
-        // --- Chart.js Setup ---
-        const ctx = document.getElementById('trafficChart').getContext('2d');
-        const trafficChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: Array(20).fill(''),
-                datasets: [{
-                    label: 'HTTP Requests',
-                    data: Array(20).fill(0),
-                    borderColor: '#ec7211',
-                    backgroundColor: 'rgba(236, 114, 17, 0.1)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: true,
-                    pointRadius: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: '#e5e7eb' } },
-                    x: { grid: { display: false } }
+            // --- Chart.js Setup ---
+            const ctx = document.getElementById('trafficChart').getContext('2d');
+            const trafficChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(20).fill(''),
+                    datasets: [{
+                        label: 'HTTP Requests',
+                        data: Array(20).fill(0),
+                        borderColor: '#ec7211',
+                        backgroundColor: 'rgba(236, 114, 17, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 0
+                    }]
                 },
-                animation: { duration: 0 }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#e5e7eb' } },
+                        x: { grid: { display: false } }
+                    },
+                    animation: { duration: 0 }
+                }
+            });
+
+            // --- Live Simulation Logic (Retained) ---
+            const logContainer = document.getElementById('log-container');
+
+            function updateStats() {
+                // Randomize Stats
+                const req = Math.floor(12000 + Math.random() * 1500);
+                const cpu = Math.floor(20 + Math.random() * 40);
+                const lat = Math.floor(40 + Math.random() * 20);
+
+                document.getElementById('val-req').innerText = req.toLocaleString();
+                document.getElementById('val-cpu').innerText = cpu;
+                document.getElementById('val-lat').innerText = lat;
+                document.getElementById('bar-cpu').style.width = `${cpu}%`;
+
+                // Update Chart
+                const newData = trafficChart.data.datasets[0].data;
+                newData.shift();
+                newData.push(req);
+                trafficChart.update();
+
+                // Append Log
+                const now = new Date().toISOString().split('T')[1].split('.')[0];
+                const ips = ['10.0.1.24', '192.168.0.5', '172.16.2.8', '10.0.2.199'];
+                const methods = ['GET', 'POST', 'PUT'];
+                const paths = ['/api/v1/users', '/login', '/dashboard', '/api/v1/payments'];
+                const codes = [200, 200, 200, 201, 304, 401];
+
+                const logLine = document.createElement('div');
+                const ip = ips[Math.floor(Math.random() * ips.length)];
+                const method = methods[Math.floor(Math.random() * methods.length)];
+                const path = paths[Math.floor(Math.random() * paths.length)];
+                const code = codes[Math.floor(Math.random() * codes.length)];
+                const colorClass = code === 200 || code === 201 ? 'text-green-400' : (code === 401 ? 'text-yellow-500' : 'text-gray-300');
+
+                logLine.className = "mb-1 whitespace-nowrap";
+                logLine.innerHTML = `<span class="text-gray-500">[${now}]</span> ${ip} - <span class="${colorClass}">${method} ${path} HTTP/1.1 ${code}</span> - ${Math.floor(Math.random() * 50)}ms`;
+
+                logContainer.appendChild(logLine);
+                if (logContainer.childElementCount > 50) logContainer.removeChild(logContainer.firstChild);
+                logContainer.scrollTop = logContainer.scrollHeight;
             }
-        });
 
-        // --- Live Simulation Logic (Retained) ---
-        const logContainer = document.getElementById('log-container');
-
-        function updateStats() {
-            // Randomize Stats
-            const req = Math.floor(12000 + Math.random() * 1500);
-            const cpu = Math.floor(20 + Math.random() * 40);
-            const lat = Math.floor(40 + Math.random() * 20);
-
-            document.getElementById('val-req').innerText = req.toLocaleString();
-            document.getElementById('val-cpu').innerText = cpu;
-            document.getElementById('val-lat').innerText = lat;
-            document.getElementById('bar-cpu').style.width = `${cpu}%`;
-
-            // Update Chart
-            const newData = trafficChart.data.datasets[0].data;
-            newData.shift();
-            newData.push(req);
-            trafficChart.update();
-
-            // Append Log
-            const now = new Date().toISOString().split('T')[1].split('.')[0];
-            const ips = ['10.0.1.24', '192.168.0.5', '172.16.2.8', '10.0.2.199'];
-            const methods = ['GET', 'POST', 'PUT'];
-            const paths = ['/api/v1/users', '/login', '/dashboard', '/api/v1/payments'];
-            const codes = [200, 200, 200, 201, 304, 401];
-
-            const logLine = document.createElement('div');
-            const ip = ips[Math.floor(Math.random() * ips.length)];
-            const method = methods[Math.floor(Math.random() * methods.length)];
-            const path = paths[Math.floor(Math.random() * paths.length)];
-            const code = codes[Math.floor(Math.random() * codes.length)];
-            const colorClass = code === 200 || code === 201 ? 'text-green-400' : (code === 401 ? 'text-yellow-500' : 'text-gray-300');
-
-            logLine.className = "mb-1 whitespace-nowrap";
-            logLine.innerHTML = `<span class="text-gray-500">[${now}]</span> ${ip} - <span class="${colorClass}">${method} ${path} HTTP/1.1 ${code}</span> - ${Math.floor(Math.random() * 50)}ms`;
-
-            logContainer.appendChild(logLine);
-            if (logContainer.childElementCount > 50) logContainer.removeChild(logContainer.firstChild);
-            logContainer.scrollTop = logContainer.scrollHeight;
-        }
-
-        setInterval(updateStats, 1000);
-    </script>
+            setInterval(updateStats, 1000);
+        </script>
 </body>
+
 </html>
